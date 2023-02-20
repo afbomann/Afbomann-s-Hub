@@ -13,3 +13,12 @@ PrisonLife:Button(
         wait()
         loadstring(game:HttpGet "https://raw.githubusercontent.com/afbomann/Afbomann-s-Hub/main/Games/Prison%20Life")()
 end)
+
+local TrenchWar = serv:Channel("Trench War")
+
+TrenchWar:Button(
+    "Load Trench War",
+    function()
+        wait()
+        loadstring(game:HttpGet "https://raw.githubusercontent.com/afbomann/Afbomann-s-Hub/main/Games/Trench%20War")()
+end)

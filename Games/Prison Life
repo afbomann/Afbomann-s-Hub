@@ -1,4 +1,5 @@
-local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+--local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+local GameName = "Prison Life"
 local LocalPlayer = game.Players.LocalPlayer
 local Camera = game:GetService("Workspace").Camera
 local Mouse = LocalPlayer:GetMouse()

@@ -1,1 +1,488 @@
+local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+local LocalPlayer = game.Players.LocalPlayer
+local Camera = game:GetService("Workspace").Camera
+local Mouse = LocalPlayer:GetMouse()
+local worldToViewportPoint = Camera.worldToViewportPoint
+local UIS = game:GetService("UserInputService")
 
+local Target
+
+local mt = getrawmetatable(game)
+local mtold = mt.__namecall
+setreadonly(mt, false)
+
+local hook
+hook = hookmetamethod(game.Players.LocalPlayer,"__namecall",function(...)
+    if getnamecallmethod() == "Kick" then
+        return wait(9e8);
+    end;
+    return hook(...);
+end);
+
+getgenv().Aimbot = false
+getgenv().AimbotFOVCircle = false;
+getgenv().SilentAim = false
+local AimbotFOVAmount = 200
+getgenv().ESPTracer = false
+getgenv().ESPNameAndDistance = false
+getgenv().ESPBox = false
+getgenv().ESPHealthBar = false
+getgenv().ESPItems = false
+
+local DiscordLib =
+    loadstring(game:HttpGet "https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/discord")()
+
+local win = DiscordLib:Window(GameName.." - Made by Afbomann#6969")
+
+local serv = win:Server("Main", "")
+
+local Aimbot = serv:Channel("Aimbot")
+
+Aimbot:Toggle(
+    "Aimbot",
+    false,
+    function(bool)
+        getgenv().Aimbot = bool
+    end
+)
+
+local AimbotFOVSlider =
+    Aimbot:Slider(
+    "Aimbot FOV",
+    100,
+    800,
+    100,
+    function(t)
+        AimbotFOVAmount = t
+    end
+)
+
+Aimbot:Toggle(
+    "Aimbot FOV Circle",
+    false,
+    function(bool)
+        getgenv().AimbotFOVCircle = bool
+    end
+)
+
+Aimbot:Seperator()
+
+Aimbot:Toggle(
+    "Silent Aim",
+    false,
+    function(bool)
+        getgenv().SilentAim = bool
+    end
+)
+
+local Visuals = serv:Channel("Visuals")
+
+Visuals:Toggle(
+    "Tracer",
+    false,
+    function(bool)
+        getgenv().ESPTracer = bool
+    end
+)
+
+Visuals:Toggle(
+    "Name and Distance",
+    false,
+    function(bool)
+        getgenv().ESPNameAndDistance = bool
+    end
+)
+
+Visuals:Toggle(
+    "Box",
+    false,
+    function(bool)
+        getgenv().ESPBox = bool
+    end
+)
+
+Visuals:Toggle(
+    "Health Bar",
+    false,
+    function(bool)
+        getgenv().ESPHealthBar = bool
+    end
+)
+
+local Other = serv:Channel("Other")
+
+Other:Toggle(
+    "Item ESP",
+    false,
+    function(bool)
+        getgenv().ESPItems = bool
+    end
+)
+
+local Settings = serv:Channel("Settings")
+
+Settings:Button(
+    "Rejoin",
+    function()
+        wait()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+)
+
+function NotBehindWall(target)
+    local ray = Ray.new(LocalPlayer.Character.Head.Position, (target.Position - LocalPlayer.Character.Head.Position).Unit * 800)
+    local part, position = game:GetService("Workspace"):FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character}, false, true)
+    if part then
+        local humanoid = part.Parent:FindFirstChildOfClass("Humanoid")
+        if not humanoid then
+            humanoid = part.Parent.Parent:FindFirstChildOfClass("Humanoid")
+        end
+        if humanoid and target and humanoid.Parent == target.Parent then
+            local pos, visible = Camera:WorldToScreenPoint(target.Position)
+            if visible then
+                return true
+            else
+                return false
+            end
+        end
+    end
+end
+
+function GetPlayerClosestToMouse()
+    local Target, Closest = nil, math.huge
+    
+    for i, v in pairs(game:GetService("Players"):GetPlayers()) do
+        if v.Character then
+            if v.Character.Humanoid.Health > 0 and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= LocalPlayer and v.Team ~= LocalPlayer.Team and not v.Character:FindFirstChild("ForceField") then
+                local ScreenPos, OnScreen = Camera:WorldToScreenPoint(v.Character.HumanoidRootPart.Position);
+                if OnScreen then
+                    local Distance = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude;
+            
+                    if (Distance < Closest) then
+                        Closest = Distance;
+                        Target = v
+                    end
+                end
+            end        
+        end
+    end
+    return Target
+end
+
+local HeadOff = Vector3.new(0, 0.5, 0)
+local LegOff = Vector3.new(0,3,0)
+
+function Esp(Player)
+    local BoxOutline = Drawing.new("Square")
+    BoxOutline.Visible = false 
+    BoxOutline.Color = Color3.fromRGB(246,18,18)
+    BoxOutline.Thickness = 3
+    BoxOutline.Transparency = 1
+    BoxOutline.Filled = false 
+    
+    local Box = Drawing.new("Square")
+    Box.Visible = false 
+    Box.Color = Color3.fromRGB(246,18,18)
+    Box.Thickness = 1
+    Box.Transparency = 1
+    Box.Filled = false 
+    
+    local HealthBarOutline = Drawing.new("Square")
+    HealthBarOutline.Thickness = 3
+    HealthBarOutline.Filled = false
+    HealthBarOutline.Color = Color3.new(0,0,0)
+    HealthBarOutline.Transparency = 1
+    HealthBarOutline.Visible = false
+
+    local HealthBar = Drawing.new("Square")
+    HealthBar.Thickness = 1
+    HealthBar.Filled = false
+    HealthBar.Transparency = 1
+    HealthBar.Visible = false
+    
+    local Tracer = Drawing.new("Line")
+    Tracer.Visible = false
+    Tracer.Color = Color3.new(1,1,1)
+    Tracer.Thickness = 1
+    Tracer.Transparency = 1
+    
+    local Name = Drawing.new("Text")
+    Name.Text = Player.Name
+    Name.Center = true
+    Name.Outline = true
+    Name.Visible = false
+    Name.Color = Color3.fromRGB(255,255,255)
+    Name.Transparency = 1
+    
+    local renderStepped
+    renderStepped = game:GetService("RunService").RenderStepped:Connect(function()
+        if Player.Character ~= nil and Player.Character:FindFirstChild("Humanoid") ~= nil and Player.Character:FindFirstChild("HumanoidRootPart") ~= nil and Player ~= LocalPlayer and Player.Character.Humanoid.Health > 0 and Player.Team ~= LocalPlayer.Team then
+            local Vector, onScreen = Camera:worldToViewportPoint(Player.Character.HumanoidRootPart.Position)
+
+            local RootPart = Player.Character.HumanoidRootPart
+            local Head = Player.Character.Head
+            local RootPosition, RootVis = worldToViewportPoint(Camera, RootPart.Position)
+            local HeadPosition = worldToViewportPoint(Camera, Head.Position + HeadOff)
+            local LegPosition = worldToViewportPoint(Camera, RootPart.Position - LegOff)
+
+            if onScreen then
+                Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 1)
+                Tracer.To = Vector2.new(Vector.X, Vector.Y)
+
+                Name.Position = Vector2.new(Vector.X, Vector.Y)
+                Name.Visible = true
+                Name.Text = Player.Name.."\n"..math.floor((LocalPlayer.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude).."m"
+                
+                BoxOutline.Size = Vector2.new(2500 / RootPosition.Z, HeadPosition.Y - LegPosition.Y)
+                BoxOutline.Position = Vector2.new(RootPosition.X - BoxOutline.Size.X / 2, RootPosition.Y - BoxOutline.Size.Y / 2)
+                BoxOutline.Visible = true
+                
+                Box.Size = Vector2.new(2500 / RootPosition.Z, HeadPosition.Y - LegPosition.Y)
+                Box.Position = Vector2.new(RootPosition.X - Box.Size.X / 2, RootPosition.Y - Box.Size.Y / 2)
+                Box.Visible = true
+                
+                HealthBarOutline.Size = Vector2.new(2, HeadPosition.Y - LegPosition.Y)
+                HealthBarOutline.Position = BoxOutline.Position - Vector2.new(6,0)
+                HealthBarOutline.Visible = true
+
+                HealthBar.Size = Vector2.new(2, (HeadPosition.Y - LegPosition.Y) / (Player.Character.Humanoid["MaxHealth"] / math.clamp(Player.Character.Humanoid["Health"], 0, Player.Character.Humanoid["MaxHealth"])))
+                HealthBar.Position = Vector2.new(Box.Position.X - 6, Box.Position.Y + (1 / HealthBar.Size.Y))
+                HealthBar.Color = Color3.fromRGB(255 - 255 / (Player.Character.Humanoid["MaxHealth"] / Player.Character.Humanoid["Health"]), 255 / (Player.Character.Humanoid["MaxHealth"] / Player.Character.Humanoid["Health"]), 0)
+                HealthBar.Visible = true
+
+                if Player.Character:FindFirstChild("ForceField") then
+                    Name.Color = Color3.fromRGB(246,18,18)
+                else
+                    Name.Color = Color3.fromRGB(255,255,255)
+                end    
+
+                --if v.Team ~= LocalPlayer.Team then
+                    Tracer.Color = Color3.fromRGB(246,18,18)
+                --else
+                    --Tracer.Color = Color3.fromRGB(19,19,239)
+                --end
+                    
+                if getgenv().ESPTracer == false then
+                    Tracer.Visible = false
+                else
+                    Tracer.Visible = true
+                end
+                
+                if getgenv().ESPNameAndDistance == false then
+                    Name.Visible = false
+                else
+                    Name.Visible = true
+                end
+                
+                if getgenv().ESPBox == false then
+                    Box.Visible = false
+                    BoxOutline.Visible = false
+                else
+                    Box.Visible = true
+                    BoxOutline.Visible = true
+                end
+                
+                if getgenv().ESPHealthBar == false then
+                    HealthBar.Visible = false
+                    HealthBarOutline.Visible = false
+                else
+                    HealthBar.Visible = true
+                    HealthBarOutline.Visible = true
+                end
+                
+                if Player.Character:FindFirstChild("ForceField") then
+                    Tracer.Visible = false
+                    Name.Visible = false
+                    Box.Visible = false
+                    BoxOutline.Visible = false
+                    HealthBar.Visible = false
+                    HealthBarOutline.Visible = false
+                end
+                
+                --if v.Team == LocalPlayer.Team then
+                    --Tracer.Visible = false
+                --end
+
+            else
+                Name.Visible = false
+                Tracer.Visible = false
+                Box.Visible = false
+                BoxOutline.Visible = false
+                HealthBar.Visible = false
+                HealthBarOutline.Visible = false
+            end
+        else
+            Name.Visible = false
+            Tracer.Visible = false
+            Box.Visible = false
+            BoxOutline.Visible = false
+            HealthBar.Visible = false
+            HealthBarOutline.Visible = false
+        end
+        wait(0.01)
+    end)
+    
+    game.Players.PlayerRemoving:Connect(function(v)
+        if v.UserId == Player.UserId then
+            Tracer.Visible = false
+            Name.Visible = false
+            Box.Visible = false
+            BoxOutline.Visible = false
+            HealthBar.Visible = false
+            HealthBarOutline.Visible = false
+            Tracer:Remove()
+            Name:Remove()
+            Box:Remove()
+            BoxOutline:Remove()
+            HealthBar:Remove()
+            HealthBarOutline:Remove()
+            renderStepped:Disconnect()
+        end    
+    end)    
+end
+
+function EspItem(Player)
+    local Name = Drawing.new("Text")
+    Name.Text = Player.Name
+    Name.Center = true
+    Name.Outline = true
+    Name.Visible = false
+    Name.Color = Color3.fromRGB(255,255,255)
+    Name.Transparency = 1
+    
+    local renderStepped
+    renderStepped = game:GetService("RunService").RenderStepped:Connect(function()
+        if Player then
+            local Vector, onScreen = Camera:worldToViewportPoint(Player.ITEMPICKUP.Position)
+            
+            if onScreen then
+                Name.Position = Vector2.new(Vector.X, Vector.Y)
+                Name.Visible = true
+                Name.Text = Player.Name.."\n"..math.floor((LocalPlayer.Character.HumanoidRootPart.Position - Player.ITEMPICKUP.Position).Magnitude).."m"
+                
+                if getgenv().ESPItems == false then
+                    Name.Visible = false
+                else
+                    Name.Visible = true
+                end
+            else
+                Name.Visible = false
+            end
+        else
+            Name.Visible = false
+        end
+        wait(0.01)
+    end)
+    
+    Player.Parent.ChildRemoved:Connect(function(v)
+        if v == Player then
+            Name.Visible = false
+            Name:Remove()
+            renderStepped:Disconnect()
+        end    
+    end)    
+end    
+
+for i,v in pairs(game.Players:GetChildren()) do
+    Esp(v)
+end
+
+game.Players.PlayerAdded:Connect(function(v)
+    Esp(v)
+end)
+
+for i,v in pairs(workspace.Prison_ITEMS.single:GetChildren()) do
+    EspItem(v)
+end
+
+workspace.Prison_ITEMS.single.ChildAdded:Connect(function(v)
+    EspItem(v)
+end)
+
+local AimbotAim = false
+game:GetService("RunService").RenderStepped:Connect(function()
+    if LocalPlayer.Character.Humanoid.Health > 0 then
+        local target = nil
+        local dist = math.huge
+    
+        for i, v in pairs(game:GetService("Players"):GetPlayers()) do
+            if v ~= LocalPlayer then
+                if v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 and v.Character:FindFirstChild("Head") and v ~= LocalPlayer and v.Team ~= LocalPlayer.Team and not v.Character:FindFirstChild("ForceField") then
+                    local Character = v.Character
+                    local CharacterPos, IsOnScreen = Camera:worldToViewportPoint(Character.Head.Position)
+                
+                    if IsOnScreen then
+                        local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(CharacterPos.X, CharacterPos.Y)).Magnitude
+
+                        if magnitude < dist and magnitude < AimbotFOVAmount and NotBehindWall(v.Character.Head) then
+                            target = Character
+                            dist = magnitude
+                        end
+                    end
+                end
+            end
+            if target ~= nil and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") and target:FindFirstChild("Humanoid").Health > 0 and AimbotAim and getgenv().Aimbot == true then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position)
+            end
+        end
+    end
+    wait(0.01)
+end)
+
+UIS.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotAim = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotAim = false
+    end
+end)
+
+local fovcircle = Drawing.new("Circle")
+fovcircle.Visible = false
+fovcircle.Radius = AimbotFOVAmount
+fovcircle.Color = Color3.fromRGB(255,255,255)
+fovcircle.Thickness = 1
+fovcircle.Filled = false
+fovcircle.Transparency = 1
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    fovcircle.Radius = AimbotFOVAmount
+    fovcircle.Position = Vector2.new(UIS:GetMouseLocation().X, UIS:GetMouseLocation().Y)
+    
+    if getgenv().AimbotFOVCircle == true then
+        fovcircle.Visible = true
+    else
+        fovcircle.Visible = false
+    end
+    
+    if getgenv().SilentAim == true then
+        Target = GetPlayerClosestToMouse()
+    end    
+    wait(0.01)
+end)
+
+local Old2
+Old2 = hookmetamethod(game, "__namecall", function(Self, ...)
+    local Args = {...}
+    local method = getnamecallmethod()
+    
+    if not checkcaller() and method == "FireServer" then
+        if Self.Name == "ShootEvent" and method == "FireServer" then
+		    if Target and Target.Character and Target.Character.Humanoid and Target.Character.Humanoid.Health > 0 and Target ~= LocalPlayer and Target.Team ~= LocalPlayer.Team then
+		        if getgenv().SilentAim then
+			        for i,v in next, Args[1] do
+			            v.Hit = Target.Character.Head
+			            v.Cframe = Target.Character.Head.CFrame
+			        end
+			        print("Found and shot "..Target.Name)
+    			    --return self.FireServer(self, unpack(Args))
+		        end
+	        end
+        end
+    end
+    return Old2(Self, unpack(Args))
+end)

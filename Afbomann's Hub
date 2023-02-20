@@ -1,1 +1,15 @@
+local DiscordLib =
+    loadstring(game:HttpGet "https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/discord")()
 
+local win = DiscordLib:Window("Afbomann's hub - Made by Afbomann#6969")
+
+local serv = win:Server("Main", "")
+
+local PrisonLife = serv:Channel("Prison Life")
+
+PrisonLife:Button(
+    "Load Prison Life",
+    function()
+        wait()
+        loadstring(game:HttpGet "https://raw.githubusercontent.com/afbomann/Afbomann-s-Hub/main/Games/Prison%20Life")()
+end)
